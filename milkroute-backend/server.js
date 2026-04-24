@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express    = require("express");
 const cors       = require("cors");
 const connectDB  = require("./config/db");
@@ -5,20 +6,21 @@ const connectDB  = require("./config/db");
 const app = express();
 
 // ── Connect to MongoDB ────────────────────────────────────────────────────────
-// This will use the MONGO_URI you added to the Railway Variables tab
+// Ensure MONGO_URI is set in Railway Variables tab
 connectDB();
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-// Updated CORS to allow local development AND your future live site
 const allowedOrigins = [
   "http://localhost:5173", 
-  "https://milkroute-frontend.vercel.app", // Change this to your actual frontend URL later
-  /\.railway\.app$/                        // This allows all Railway subdomains
+  "https://milkroute-production.up.railway.app",
+  "https://milkroute-ny4cpzblh-chamodyamihiraths-projects.vercel.app", 
+  /\.vercel\.app$/,   // Regex to allow all Vercel preview deployments
+  /\.railway\.app$/    // Regex to allow Railway subdomains
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or Postman)
+    // Allow requests with no origin (like mobile apps, curl, or Postman)
     if (!origin) return callback(null, true);
     
     const isAllowed = allowedOrigins.some(allowed => {
@@ -29,6 +31,7 @@ app.use(cors({
     if (isAllowed) {
       return callback(null, true);
     } else {
+      console.log("CORS blocked origin:", origin);
       return callback(new Error("CORS policy blocked this origin"), false);
     }
   },
@@ -43,7 +46,11 @@ app.use("/api/logs",     require("./routes/logs"));
 app.use("/api/payments", require("./routes/payments"));
 
 // ── Health check ──────────────────────────────────────────────────────────────
-app.get("/api/health", (req, res) => res.json({ status: "ok", time: new Date() }));
+app.get("/api/health", (req, res) => res.json({ 
+  status: "ok", 
+  message: "MilkRoute API is live",
+  timestamp: new Date() 
+}));
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: "Route not found" }));
@@ -55,7 +62,7 @@ app.use((err, req, res, next) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-// Railway will automatically provide a PORT, or it defaults to 5000
+// Railway will provide the PORT automatically
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
