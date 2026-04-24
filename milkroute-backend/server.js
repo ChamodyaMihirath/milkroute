@@ -9,7 +9,20 @@ const app = express();
 connectDB();
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-app.use(cors({ origin: "http://localhost:5173" })); // Vite default port
+// CHANGE 1: Allow both local development and your future live frontend URL
+const allowedOrigins = ["http://localhost:5173", "https://your-frontend-name.onrender.com"];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error("CORS policy blocked this origin"), false);
+    }
+    return callback(null, true);
+  }
+}));
+
 app.use(express.json());
 
 // ── Routes ────────────────────────────────────────────────────────────────────
@@ -31,4 +44,6 @@ app.use((err, req, res, next) => {
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`MilkRoute API running on http://localhost:${PORT}`));
+
+// CHANGE 2: Remove 'http://localhost' from the log so it doesn't confuse you in production
+app.listen(PORT, () => console.log(`MilkRoute API running on port ${PORT}`));
